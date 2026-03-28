@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: hsl(215, 30%, 8%);
+  --color-foreground: hsl(38, 30%, 82%);
+  --color-primary: hsl(30, 60%, 55%);
+  --color-secondary: hsl(215, 30%, 15%);
+  --color-accent: hsl(35, 50%, 50%);
+  --color-muted: hsl(215, 30%, 15%);
+  --color-muted-foreground: hsl(38, 15%, 55%);
+  --color-border: hsl(30, 20%, 25%);
+  --color-input: hsl(215, 30%, 15%);
+  --color-ring: hsl(30, 60%, 55%);
+  --color-card: hsl(215, 30%, 12%);
+  --color-card-foreground: hsl(38, 30%, 82%);
+  --color-popover: hsl(215, 30%, 8%);
+  --color-popover-foreground: hsl(38, 30%, 82%);
+  --color-destructive: hsl(0, 70%, 50%);
+  --color-destructive-foreground: hsl(0, 0%, 100%);
+
+  --font-sans: 'Lora', serif;
+  --font-serif: 'Playfair Display', serif;
+  --font-heading: 'Playfair Display', serif;
+  --font-body: 'Lora', serif;
+  --font-mono: Menlo, monospace;
+
+  --radius-sm: 0.125rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.5rem;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-body);
+    transition: background-color 1.5s cubic-bezier(0.22, 1, 0.36, 1), color 1.5s ease;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    @apply tracking-tight font-light;
+  }
+
+  /* Custom scrollbar for an editorial feel */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-background;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-accent;
+  }
+}
+
+@layer utilities {
+  .noise-bg {
+    position: relative;
+  }
+  .noise-bg::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0.03;
+    z-index: 0;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  }
+}

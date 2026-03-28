@@ -1,22 +1,24 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Literary Dispatch API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: entries
+    description: Literary entries
+  - name: theme
+    description: Artist theme management
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +26,127 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /entries:
+    get:
+      operationId: listEntries
+      tags: [entries]
+      summary: List all literary entries
+      responses:
+        "200":
+          description: List of entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Entry"
+    post:
+      operationId: createEntry
+      tags: [entries]
+      summary: Submit a new literary entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEntryInput"
+      responses:
+        "201":
+          description: Entry created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Entry"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /entries/{id}:
+    delete:
+      operationId: deleteEntry
+      tags: [entries]
+      summary: Delete a literary entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Entry deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /theme:
+    get:
+      operationId: getCurrentTheme
+      tags: [theme]
+      summary: Get the current artist theme
+      responses:
+        "200":
+          description: Current theme
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArtistTheme"
+
+  /theme/generate:
+    post:
+      operationId: generateTheme
+      tags: [theme]
+      summary: Generate a new artist theme (admin only)
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateThemeInput"
+      responses:
+        "200":
+          description: New theme generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArtistTheme"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/verify:
+    post:
+      operationId: verifyPassword
+      tags: [health]
+      summary: Verify admin password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordInput"
+      responses:
+        "200":
+          description: Auth result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResult"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +157,150 @@ components:
       required:
         - status
 
+    Entry:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        subject:
+          type: string
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        type:
+          type: string
+          enum: [diary, observation, quote, comment, literary]
+      required:
+        - id
+        - title
+        - subject
+        - content
+        - createdAt
+        - type
+
+    CreateEntryInput:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        subject:
+          type: string
+          maxLength: 200
+        content:
+          type: string
+        type:
+          type: string
+          enum: [diary, observation, quote, comment, literary]
+        adminPassword:
+          type: string
+      required:
+        - title
+        - subject
+        - content
+        - type
+        - adminPassword
+
+    ArtistTheme:
+      type: object
+      properties:
+        id:
+          type: integer
+        artistName:
+          type: string
+        artistBio:
+          type: string
+        era:
+          type: string
+        colorPrimary:
+          type: string
+        colorSecondary:
+          type: string
+        colorAccent:
+          type: string
+        colorBackground:
+          type: string
+        colorText:
+          type: string
+        fontHeading:
+          type: string
+        fontBody:
+          type: string
+        artworkUrls:
+          type: array
+          items:
+            type: string
+        artworkTitles:
+          type: array
+          items:
+            type: string
+        moodDescription:
+          type: string
+        activeFrom:
+          type: string
+          format: date-time
+      required:
+        - id
+        - artistName
+        - artistBio
+        - era
+        - colorPrimary
+        - colorSecondary
+        - colorAccent
+        - colorBackground
+        - colorText
+        - fontHeading
+        - fontBody
+        - artworkUrls
+        - artworkTitles
+        - moodDescription
+        - activeFrom
+
+    GenerateThemeInput:
+      type: object
+      properties:
+        adminPassword:
+          type: string
+        artistName:
+          type: string
+      required:
+        - adminPassword
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+        - message
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    PasswordInput:
+      type: object
+      properties:
+        password:
+          type: string
+      required:
+        - password
+
+    AuthResult:
+      type: object
+      properties:
+        valid:
+          type: boolean
+      required:
+        - valid

@@ -1,0 +1,9 @@
+packages:
+  "framer-motion": "For elegant page transitions and staggered entry animations"
+  "clsx": "For merging tailwind classes safely"
+  "tailwind-merge": "For merging tailwind classes safely"
+
+notes:
+  - Using native Intl.DateTimeFormat for date formatting (no date-fns required)
+  - Assuming API delete endpoint accepts authentication via X-Admin-Password or Authorization header
+  - Theme colors from API are injected dynamically into CSS variables at the :root level
