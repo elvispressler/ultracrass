@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/ultracrass/"
+title = "ultracrass.com"
+version = "1.0.0"
+id = "artifacts/ultracrass"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/ultracrass/" ]
+localPort = 23874
+
+[services.development]
+run = "pnpm --filter @workspace/ultracrass run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ultracrass", "run", "build" ]
+publicDir = "artifacts/ultracrass/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23874"
+BASE_PATH = "/ultracrass/"
