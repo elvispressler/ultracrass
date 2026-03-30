@@ -77,21 +77,21 @@ function ArtworkLayer() {
           height: '130%',
           objectFit: 'cover',
           objectPosition: 'center',
-          opacity: 0.09,
+          opacity: 0.22,
         }}
       />
       <div
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'linear-gradient(to right, var(--bg) 28%, transparent 72%)',
+          background: 'linear-gradient(to right, var(--bg) 18%, transparent 62%)',
         }}
       />
       <div
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'linear-gradient(to bottom, transparent 60%, var(--bg) 100%)',
+          background: 'linear-gradient(to bottom, transparent 70%, var(--bg) 100%)',
         }}
       />
     </div>

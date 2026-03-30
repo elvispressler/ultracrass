@@ -5,6 +5,20 @@ import { PostCategory, CATEGORY_LABELS } from '@/types';
 const ADMIN_PASSWORD = 'ultracrass2024';
 const PASS_KEY = 'uc_auth';
 
+const GERMAN_MONTHS = [
+  'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
+];
+
+function formatDateDE(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  return `${d.getDate()}. ${GERMAN_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function todayISO(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
 const inputStyle: React.CSSProperties = {
   display: 'block',
   width: '100%',
@@ -122,8 +136,8 @@ export default function Admin() {
   const [authed, setAuthed] = useState(() => localStorage.getItem(PASS_KEY) === '1');
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<PostCategory>('fragment');
-
   const [content, setContent] = useState('');
+  const [postDate, setPostDate] = useState<string>(todayISO);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error' | 'devmode'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -156,6 +170,7 @@ export default function Admin() {
           title: title.trim(),
           category,
           content: content.trim(),
+          date: new Date(postDate + 'T12:00:00').toISOString(),
         }),
       });
       if (!resp.ok) {
@@ -166,6 +181,7 @@ export default function Admin() {
       setTitle('');
       setContent('');
       setCategory('fragment');
+      setPostDate(todayISO());
     } catch (e: unknown) {
       setStatus('error');
       setErrorMsg(e instanceof Error ? e.message : 'Unbekannter Fehler');
@@ -221,7 +237,7 @@ export default function Admin() {
           <div style={{ border: '1px solid var(--border)', padding: '24px', marginBottom: '32px' }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.15em', color: 'var(--fg-muted)', textTransform: 'uppercase', marginBottom: '12px' }}>Vorschau</div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
-              {CATEGORY_LABELS[category]} · {new Date().toLocaleDateString('de-DE')}
+              {CATEGORY_LABELS[category]} · {formatDateDE(postDate)}
             </div>
             <div style={{ fontFamily: 'var(--font-serif)', fontSize: '20px', marginBottom: '12px' }}>{title}</div>
             <div style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', color: '#aaa', lineHeight: 1.7 }}>{content}</div>
@@ -232,6 +248,35 @@ export default function Admin() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
+
+          <div>
+            <label style={labelStyle}>Datum</label>
+            <input
+              type="date"
+              value={postDate}
+              onChange={e => setPostDate(e.target.value)}
+              style={{
+                ...inputStyle,
+                colorScheme: 'dark',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '13px',
+                letterSpacing: '0.06em',
+              }}
+              onFocus={e => (e.target.style.borderBottomColor = 'var(--fg-muted)')}
+              onBlur={e => (e.target.style.borderBottomColor = 'var(--border)')}
+            />
+            <div style={{
+              marginTop: '8px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '10px',
+              letterSpacing: '0.12em',
+              color: 'var(--accent)',
+              opacity: 0.8,
+            }}>
+              {postDate ? formatDateDE(postDate) : '—'}
+            </div>
+          </div>
+
           <div>
             <label style={labelStyle}>Titel</label>
             <input

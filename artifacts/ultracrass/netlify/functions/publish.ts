@@ -4,6 +4,7 @@ interface PublishBody {
   title: string;
   category: string;
   content: string;
+  date?: string;
 }
 
 interface GithubFileResponse {
@@ -63,15 +64,15 @@ export const handler: Handler = async (event) => {
     posts = [];
   }
 
-  const now = new Date().toISOString();
-  const id = `${now.slice(0, 10)}-${Date.now()}`;
+  const postDate = body.date ? new Date(body.date).toISOString() : new Date().toISOString();
+  const id = `${postDate.slice(0, 10)}-${Date.now()}`;
 
   const newPost = {
     id,
     title: body.title.trim(),
     category: body.category,
     content: body.content.trim(),
-    date: now,
+    date: postDate,
   };
 
   const updatedPosts = [newPost, ...posts];
