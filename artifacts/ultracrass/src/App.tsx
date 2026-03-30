@@ -1,6 +1,8 @@
+import { useEffect } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import Home from "@/pages/Home";
 import Admin from "@/pages/Admin";
+import { pickTheme, applyTheme } from "@/lib/themes";
 
 function Router() {
   return (
@@ -17,6 +19,10 @@ function Router() {
 }
 
 export default function App() {
+  useEffect(() => {
+    applyTheme(pickTheme());
+  }, []);
+
   return (
     <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
       <Router />
