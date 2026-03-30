@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
 import postsData from '@/data/posts.json';
 import { Post, PostCategory, CATEGORY_LABELS } from '@/types';
+import { pickArtwork, Artwork } from '@/lib/artworks';
+
+const sessionArtwork: Artwork = pickArtwork();
 
 const formatDate = (iso: string) => {
   const d = new Date(iso);
@@ -49,64 +52,152 @@ function Meta({ post }: { post: Post }) {
   );
 }
 
+function ArtworkLayer() {
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 0,
+        pointerEvents: 'none',
+        overflow: 'hidden',
+      }}
+    >
+      <img
+        src={sessionArtwork.url}
+        alt=""
+        loading="lazy"
+        style={{
+          position: 'absolute',
+          right: 0,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          width: '52%',
+          height: '130%',
+          objectFit: 'cover',
+          objectPosition: 'center',
+          opacity: 0.09,
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(to right, var(--bg) 28%, transparent 72%)',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(to bottom, transparent 60%, var(--bg) 100%)',
+        }}
+      />
+    </div>
+  );
+}
+
+function ArtworkCredit() {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        bottom: '18px',
+        right: 0,
+        fontFamily: 'var(--font-mono)',
+        fontSize: '8px',
+        letterSpacing: '0.12em',
+        color: 'var(--fg-dim)',
+        textTransform: 'uppercase',
+        pointerEvents: 'none',
+        zIndex: 2,
+        opacity: 0.6,
+      }}
+    >
+      {sessionArtwork.artist} · {sessionArtwork.title} · {sessionArtwork.year}
+    </div>
+  );
+}
+
 function HeroPost({ post }: { post: Post }) {
+  const articleBase: React.CSSProperties = {
+    position: 'relative',
+    padding: '80px 0 72px',
+    borderBottom: '1px solid var(--border)',
+    overflow: 'hidden',
+  };
+
+  const contentBase: React.CSSProperties = {
+    position: 'relative',
+    zIndex: 1,
+  };
+
   if (post.category === 'zitat') {
     return (
-      <article style={{ padding: '80px 0 72px', borderBottom: '1px solid var(--border)' }}>
-        <Meta post={post} />
-        <div style={{
-          marginTop: '48px',
-          fontFamily: 'var(--font-serif)',
-          fontSize: 'clamp(28px, 6vw, 56px)',
-          fontStyle: 'italic',
-          fontWeight: 400,
-          lineHeight: 1.15,
-          letterSpacing: '-0.02em',
-          color: 'var(--fg)',
-          maxWidth: '820px',
-        }}>
-          {post.content}
+      <article style={articleBase}>
+        <ArtworkLayer />
+        <div style={contentBase}>
+          <Meta post={post} />
+          <div style={{
+            marginTop: '48px',
+            fontFamily: 'var(--font-serif)',
+            fontSize: 'clamp(28px, 6vw, 56px)',
+            fontStyle: 'italic',
+            fontWeight: 400,
+            lineHeight: 1.15,
+            letterSpacing: '-0.02em',
+            color: 'var(--fg)',
+            maxWidth: '820px',
+          }}>
+            {post.content}
+          </div>
+          <div style={{
+            marginTop: '24px',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '10px',
+            letterSpacing: '0.15em',
+            color: 'var(--fg-muted)',
+          }}>
+            — {post.title}
+          </div>
         </div>
-        <div style={{
-          marginTop: '24px',
-          fontFamily: 'var(--font-mono)',
-          fontSize: '10px',
-          letterSpacing: '0.15em',
-          color: 'var(--fg-muted)',
-        }}>
-          — {post.title}
-        </div>
+        <ArtworkCredit />
       </article>
     );
   }
 
   return (
-    <article style={{ padding: '80px 0 72px', borderBottom: '1px solid var(--border)' }}>
-      <Meta post={post} />
-      <h2 style={{
-        marginTop: '28px',
-        fontFamily: 'var(--font-serif)',
-        fontSize: 'clamp(32px, 6vw, 64px)',
-        fontWeight: 400,
-        lineHeight: 1.08,
-        letterSpacing: '-0.03em',
-        color: 'var(--fg)',
-        maxWidth: '800px',
-      }}>
-        {post.title}
-      </h2>
-      <p style={{
-        marginTop: '28px',
-        fontFamily: 'var(--font-sans)',
-        fontSize: '16px',
-        fontWeight: 300,
-        lineHeight: 1.8,
-        color: '#999',
-        maxWidth: '560px',
-        whiteSpace: 'pre-wrap',
-      }}>
-        {post.content}
-      </p>
+    <article style={articleBase}>
+      <ArtworkLayer />
+      <div style={contentBase}>
+        <Meta post={post} />
+        <h2 style={{
+          marginTop: '28px',
+          fontFamily: 'var(--font-serif)',
+          fontSize: 'clamp(32px, 6vw, 64px)',
+          fontWeight: 400,
+          lineHeight: 1.08,
+          letterSpacing: '-0.03em',
+          color: 'var(--fg)',
+          maxWidth: '800px',
+        }}>
+          {post.title}
+        </h2>
+        <p style={{
+          marginTop: '28px',
+          fontFamily: 'var(--font-sans)',
+          fontSize: '16px',
+          fontWeight: 300,
+          lineHeight: 1.8,
+          color: '#999',
+          maxWidth: '560px',
+          whiteSpace: 'pre-wrap',
+        }}>
+          {post.content}
+        </p>
+      </div>
+      <ArtworkCredit />
     </article>
   );
 }
