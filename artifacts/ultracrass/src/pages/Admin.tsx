@@ -122,6 +122,7 @@ export default function Admin() {
   const [authed, setAuthed] = useState(() => localStorage.getItem(PASS_KEY) === '1');
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<PostCategory>('fragment');
+
   const [content, setContent] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error' | 'devmode'>('idle');
   const [errorMsg, setErrorMsg] = useState('');

@@ -16,21 +16,33 @@ const formatTime = (iso: string) => {
 function Meta({ post }: { post: Post }) {
   return (
     <div style={{ display: 'flex', gap: '16px', alignItems: 'baseline', flexWrap: 'wrap' }}>
-      <span style={{
-        fontFamily: 'var(--font-mono)',
-        fontSize: '9px',
-        letterSpacing: '0.22em',
-        color: 'var(--fg-muted)',
-        textTransform: 'uppercase',
-      }}>
+      <span
+        style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: '9px',
+          letterSpacing: '0.22em',
+          color: 'var(--fg-muted)',
+          textTransform: 'uppercase',
+          transition: 'color 0.4s ease',
+          cursor: 'default',
+        }}
+        onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+        onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-muted)')}
+      >
         {CATEGORY_LABELS[post.category as PostCategory] ?? post.category}
       </span>
-      <span style={{
-        fontFamily: 'var(--font-mono)',
-        fontSize: '9px',
-        letterSpacing: '0.08em',
-        color: 'var(--fg-dim)',
-      }}>
+      <span
+        style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: '9px',
+          letterSpacing: '0.08em',
+          color: 'var(--fg-dim)',
+          transition: 'color 0.4s ease',
+          cursor: 'default',
+        }}
+        onMouseEnter={e => (e.currentTarget.style.color = 'var(--fg-muted)')}
+        onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-dim)')}
+      >
         {formatDate(post.date)} · {formatTime(post.date)}
       </span>
     </div>

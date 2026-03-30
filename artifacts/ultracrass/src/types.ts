@@ -1,4 +1,4 @@
-export type PostCategory = 'fragment' | 'beobachtung' | 'zitat' | 'notiz' | 'tagebuch';
+export type PostCategory = 'fragment' | 'beobachtung' | 'zitat' | 'polis';
 
 export interface Post {
   id: string;
@@ -12,6 +12,5 @@ export const CATEGORY_LABELS: Record<PostCategory, string> = {
   fragment: 'Fragment',
   beobachtung: 'Beobachtung',
   zitat: 'Zitat',
-  notiz: 'Notiz',
-  tagebuch: 'Tagebuch',
+  polis: 'Polis',
 };
