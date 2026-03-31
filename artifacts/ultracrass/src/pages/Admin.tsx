@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'wouter';
 import { PostCategory, CATEGORY_LABELS } from '@/types';
+import { Post } from '@/types';
+import postsData from '@/data/posts.json';
 
 const ADMIN_PASSWORD = 'ultracrass2024';
 const PASS_KEY = 'uc_auth';
@@ -132,6 +134,178 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
   );
 }
 
+function PostList({ isDev }: { isDev: boolean }) {
+  const [posts, setPosts] = useState<Post[]>(() =>
+    [...(postsData as Post[])].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  );
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    setDeleteError(null);
+
+    if (isDev) {
+      await new Promise(r => setTimeout(r, 400));
+      setPosts(prev => prev.filter(p => p.id !== id));
+      setConfirmId(null);
+      setDeletingId(null);
+      return;
+    }
+
+    try {
+      const resp = await fetch('/.netlify/functions/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', id }),
+      });
+      if (!resp.ok) {
+        const msg = await resp.text();
+        throw new Error(msg || resp.statusText);
+      }
+      setPosts(prev => prev.filter(p => p.id !== id));
+      setConfirmId(null);
+    } catch (e: unknown) {
+      setDeleteError(e instanceof Error ? e.message : 'Fehler beim Löschen');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  if (posts.length === 0) {
+    return (
+      <div style={{
+        fontFamily: 'var(--font-mono)',
+        fontSize: '10px',
+        color: 'var(--fg-dim)',
+        letterSpacing: '0.1em',
+        padding: '24px 0',
+      }}>
+        — keine Einträge —
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {deleteError && (
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: '#8b3333', letterSpacing: '0.05em', marginBottom: '16px' }}>
+          {deleteError}
+        </div>
+      )}
+      {posts.map(post => {
+        const isConfirming = confirmId === post.id;
+        const isDeleting = deletingId === post.id;
+
+        return (
+          <div
+            key={post.id}
+            style={{
+              borderBottom: '1px solid var(--border)',
+              padding: '16px 0',
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              gap: '16px',
+              transition: 'opacity 0.2s',
+              opacity: isDeleting ? 0.4 : 1,
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '8px',
+                letterSpacing: '0.18em',
+                color: 'var(--fg-dim)',
+                textTransform: 'uppercase',
+                marginBottom: '5px',
+              }}>
+                {CATEGORY_LABELS[post.category as PostCategory] ?? post.category}
+                {' · '}
+                {new Date(post.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+              </div>
+              <div style={{
+                fontFamily: 'var(--font-serif)',
+                fontSize: '15px',
+                fontWeight: 400,
+                color: 'var(--fg)',
+                lineHeight: 1.3,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}>
+                {post.title}
+              </div>
+            </div>
+
+            <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '12px', paddingTop: '2px' }}>
+              {isConfirming ? (
+                <>
+                  <button
+                    onClick={() => handleDelete(post.id)}
+                    disabled={isDeleting}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '9px',
+                      letterSpacing: '0.15em',
+                      color: '#8b3333',
+                      textTransform: 'uppercase',
+                      cursor: 'pointer',
+                      padding: 0,
+                    }}
+                  >
+                    {isDeleting ? '...' : 'Löschen'}
+                  </button>
+                  <button
+                    onClick={() => setConfirmId(null)}
+                    disabled={isDeleting}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '9px',
+                      letterSpacing: '0.15em',
+                      color: 'var(--fg-dim)',
+                      textTransform: 'uppercase',
+                      cursor: 'pointer',
+                      padding: 0,
+                    }}
+                  >
+                    Abbrechen
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => { setConfirmId(post.id); setDeleteError(null); }}
+                  title="Eintrag löschen"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '14px',
+                    color: 'var(--fg-dim)',
+                    cursor: 'pointer',
+                    padding: '0 4px',
+                    lineHeight: 1,
+                    transition: 'color 0.2s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.color = '#8b3333')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-dim)')}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function Admin() {
   const [authed, setAuthed] = useState(() => localStorage.getItem(PASS_KEY) === '1');
   const [title, setTitle] = useState('');
@@ -167,6 +341,7 @@ export default function Admin() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          action: 'publish',
           title: title.trim(),
           category,
           content: content.trim(),
@@ -362,6 +537,22 @@ export default function Admin() {
             >
               {status === 'loading' ? 'Wird übertragen...' : 'Veröffentlichen →'}
             </button>
+          </div>
+
+          <div style={{ marginTop: '24px' }}>
+            <div style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '9px',
+              letterSpacing: '0.2em',
+              color: 'var(--fg-muted)',
+              textTransform: 'uppercase',
+              marginBottom: '4px',
+              paddingBottom: '16px',
+              borderBottom: '1px solid var(--border)',
+            }}>
+              Alle Einträge
+            </div>
+            <PostList isDev={isDev} />
           </div>
         </div>
       )}
