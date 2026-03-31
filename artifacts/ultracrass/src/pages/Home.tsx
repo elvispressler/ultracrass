@@ -6,14 +6,15 @@ import { pickArtwork, Artwork } from '@/lib/artworks';
 
 const sessionArtwork: Artwork = pickArtwork();
 
+const GERMAN_MONTHS_LONG = [
+  'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
+];
+
 const formatDate = (iso: string) => {
   const d = new Date(iso);
-  return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-};
-
-const formatTime = (iso: string) => {
-  const d = new Date(iso);
-  return d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${day}. ${GERMAN_MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`;
 };
 
 function Meta({ post }: { post: Post }) {
@@ -46,7 +47,7 @@ function Meta({ post }: { post: Post }) {
         onMouseEnter={e => (e.currentTarget.style.color = 'var(--fg-muted)')}
         onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-dim)')}
       >
-        {formatDate(post.date)} · {formatTime(post.date)}
+        {formatDate(post.date)}
       </span>
     </div>
   );

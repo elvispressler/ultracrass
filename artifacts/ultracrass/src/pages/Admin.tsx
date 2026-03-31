@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'wouter';
-import { PostCategory, CATEGORY_LABELS } from '@/types';
-import { Post } from '@/types';
+import { PostCategory, CATEGORY_LABELS, Post } from '@/types';
 import postsData from '@/data/posts.json';
 
 const ADMIN_PASSWORD = 'ultracrass2024';
@@ -13,12 +12,17 @@ const GERMAN_MONTHS = [
 ];
 
 function formatDateDE(dateStr: string): string {
-  const d = new Date(dateStr + 'T12:00:00');
-  return `${d.getDate()}. ${GERMAN_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  const d = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T12:00:00');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${day}. ${GERMAN_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 function todayISO(): string {
   return new Date().toISOString().split('T')[0];
+}
+
+function isoToInputDate(iso: string): string {
+  return iso.split('T')[0];
 }
 
 const inputStyle: React.CSSProperties = {
@@ -47,6 +51,17 @@ const labelStyle: React.CSSProperties = {
   marginBottom: '6px',
 };
 
+const monoBtn: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  fontFamily: 'var(--font-mono)',
+  fontSize: '9px',
+  letterSpacing: '0.15em',
+  textTransform: 'uppercase',
+  cursor: 'pointer',
+  padding: 0,
+};
+
 function LoginScreen({ onLogin }: { onLogin: () => void }) {
   const [pw, setPw] = useState('');
   const [error, setError] = useState(false);
@@ -65,14 +80,7 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px' }}>
       <div style={{ width: '100%', maxWidth: '320px' }}>
-        <div style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: '9px',
-          letterSpacing: '0.25em',
-          color: 'var(--fg-muted)',
-          textTransform: 'uppercase',
-          marginBottom: '40px',
-        }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.25em', color: 'var(--fg-muted)', textTransform: 'uppercase', marginBottom: '40px' }}>
           ultracrass / zugang
         </div>
         <label style={labelStyle}>Passwort</label>
@@ -82,50 +90,21 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
           onChange={e => { setPw(e.target.value); setError(false); }}
           onKeyDown={e => e.key === 'Enter' && attempt()}
           autoFocus
-          style={{
-            ...inputStyle,
-            borderBottomColor: error ? '#8b3333' : 'var(--border)',
-          }}
+          style={{ ...inputStyle, borderBottomColor: error ? '#8b3333' : 'var(--border)' }}
           onFocus={e => (e.target.style.borderBottomColor = error ? '#8b3333' : 'var(--fg-muted)')}
           onBlur={e => (e.target.style.borderBottomColor = error ? '#8b3333' : 'var(--border)')}
         />
-        {error && (
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: '#8b3333', marginTop: '8px', letterSpacing: '0.05em' }}>
-            falsch
-          </div>
-        )}
+        {error && <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: '#8b3333', marginTop: '8px', letterSpacing: '0.05em' }}>falsch</div>}
         <button
           onClick={attempt}
-          style={{
-            marginTop: '32px',
-            background: 'transparent',
-            border: '1px solid var(--border)',
-            color: 'var(--fg-muted)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '9px',
-            letterSpacing: '0.2em',
-            textTransform: 'uppercase',
-            padding: '12px 24px',
-            cursor: 'pointer',
-            width: '100%',
-            transition: 'border-color 0.2s, color 0.2s',
-          }}
+          style={{ marginTop: '32px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--fg-muted)', fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.2em', textTransform: 'uppercase', padding: '12px 24px', cursor: 'pointer', width: '100%', transition: 'border-color 0.2s, color 0.2s' }}
           onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--fg-muted)'; e.currentTarget.style.color = 'var(--fg)'; }}
           onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--fg-muted)'; }}
         >
           Eintreten
         </button>
         <Link href="/">
-          <div style={{
-            marginTop: '20px',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '9px',
-            letterSpacing: '0.15em',
-            color: 'var(--fg-dim)',
-            textTransform: 'uppercase',
-            textAlign: 'center',
-            cursor: 'pointer',
-          }}>
+          <div style={{ marginTop: '20px', fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.15em', color: 'var(--fg-dim)', textTransform: 'uppercase', textAlign: 'center', cursor: 'pointer' }}>
             ← zurück
           </div>
         </Link>
@@ -134,10 +113,14 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
   );
 }
 
-function PostList({ isDev }: { isDev: boolean }) {
-  const [posts, setPosts] = useState<Post[]>(() =>
-    [...(postsData as Post[])].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-  );
+interface PostListProps {
+  posts: Post[];
+  onEdit: (post: Post) => void;
+  onDelete: (id: string) => Promise<void>;
+  isDev: boolean;
+}
+
+function PostList({ posts, onEdit, onDelete, isDev }: PostListProps) {
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -145,26 +128,8 @@ function PostList({ isDev }: { isDev: boolean }) {
   const handleDelete = async (id: string) => {
     setDeletingId(id);
     setDeleteError(null);
-
-    if (isDev) {
-      await new Promise(r => setTimeout(r, 400));
-      setPosts(prev => prev.filter(p => p.id !== id));
-      setConfirmId(null);
-      setDeletingId(null);
-      return;
-    }
-
     try {
-      const resp = await fetch('/.netlify/functions/publish', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'delete', id }),
-      });
-      if (!resp.ok) {
-        const msg = await resp.text();
-        throw new Error(msg || resp.statusText);
-      }
-      setPosts(prev => prev.filter(p => p.id !== id));
+      await onDelete(id);
       setConfirmId(null);
     } catch (e: unknown) {
       setDeleteError(e instanceof Error ? e.message : 'Fehler beim Löschen');
@@ -174,25 +139,18 @@ function PostList({ isDev }: { isDev: boolean }) {
   };
 
   if (posts.length === 0) {
-    return (
-      <div style={{
-        fontFamily: 'var(--font-mono)',
-        fontSize: '10px',
-        color: 'var(--fg-dim)',
-        letterSpacing: '0.1em',
-        padding: '24px 0',
-      }}>
-        — keine Einträge —
-      </div>
-    );
+    return <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--fg-dim)', letterSpacing: '0.1em', padding: '24px 0' }}>— keine Einträge —</div>;
   }
 
   return (
     <div>
-      {deleteError && (
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: '#8b3333', letterSpacing: '0.05em', marginBottom: '16px' }}>
-          {deleteError}
+      {isDev && (
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--fg-dim)', letterSpacing: '0.1em', marginBottom: '12px' }}>
+          Löschen und Bearbeiten sind nur auf Netlify aktiv
         </div>
+      )}
+      {deleteError && (
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: '#8b3333', letterSpacing: '0.05em', marginBottom: '16px' }}>{deleteError}</div>
       )}
       {posts.map(post => {
         const isConfirming = confirmId === post.id;
@@ -201,102 +159,58 @@ function PostList({ isDev }: { isDev: boolean }) {
         return (
           <div
             key={post.id}
-            style={{
-              borderBottom: '1px solid var(--border)',
-              padding: '16px 0',
-              display: 'flex',
-              alignItems: 'flex-start',
-              justifyContent: 'space-between',
-              gap: '16px',
-              transition: 'opacity 0.2s',
-              opacity: isDeleting ? 0.4 : 1,
-            }}
+            style={{ borderBottom: '1px solid var(--border)', padding: '16px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', opacity: isDeleting ? 0.4 : 1, transition: 'opacity 0.2s' }}
           >
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '8px',
-                letterSpacing: '0.18em',
-                color: 'var(--fg-dim)',
-                textTransform: 'uppercase',
-                marginBottom: '5px',
-              }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', letterSpacing: '0.18em', color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: '5px' }}>
                 {CATEGORY_LABELS[post.category as PostCategory] ?? post.category}
                 {' · '}
-                {new Date(post.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                {formatDateDE(post.date)}
               </div>
-              <div style={{
-                fontFamily: 'var(--font-serif)',
-                fontSize: '15px',
-                fontWeight: 400,
-                color: 'var(--fg)',
-                lineHeight: 1.3,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}>
+              <div style={{ fontFamily: 'var(--font-serif)', fontSize: '15px', fontWeight: 400, color: 'var(--fg)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {post.title}
               </div>
             </div>
 
-            <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '12px', paddingTop: '2px' }}>
+            <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '14px', paddingTop: '2px' }}>
               {isConfirming ? (
                 <>
                   <button
                     onClick={() => handleDelete(post.id)}
                     disabled={isDeleting}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '9px',
-                      letterSpacing: '0.15em',
-                      color: '#8b3333',
-                      textTransform: 'uppercase',
-                      cursor: 'pointer',
-                      padding: 0,
-                    }}
+                    style={{ ...monoBtn, color: '#8b3333' }}
                   >
                     {isDeleting ? '...' : 'Löschen'}
                   </button>
                   <button
                     onClick={() => setConfirmId(null)}
                     disabled={isDeleting}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '9px',
-                      letterSpacing: '0.15em',
-                      color: 'var(--fg-dim)',
-                      textTransform: 'uppercase',
-                      cursor: 'pointer',
-                      padding: 0,
-                    }}
+                    style={{ ...monoBtn, color: 'var(--fg-dim)' }}
                   >
                     Abbrechen
                   </button>
                 </>
               ) : (
-                <button
-                  onClick={() => { setConfirmId(post.id); setDeleteError(null); }}
-                  title="Eintrag löschen"
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '14px',
-                    color: 'var(--fg-dim)',
-                    cursor: 'pointer',
-                    padding: '0 4px',
-                    lineHeight: 1,
-                    transition: 'color 0.2s',
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.color = '#8b3333')}
-                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-dim)')}
-                >
-                  ×
-                </button>
+                <>
+                  <button
+                    onClick={() => onEdit(post)}
+                    title="Eintrag bearbeiten"
+                    style={{ ...monoBtn, color: 'var(--fg-dim)', fontSize: '11px', transition: 'color 0.2s' }}
+                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--fg-muted)')}
+                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-dim)')}
+                  >
+                    ✎
+                  </button>
+                  <button
+                    onClick={() => { setConfirmId(post.id); setDeleteError(null); }}
+                    title="Eintrag löschen"
+                    style={{ ...monoBtn, fontSize: '14px', color: 'var(--fg-dim)', transition: 'color 0.2s', lineHeight: 1 }}
+                    onMouseEnter={e => (e.currentTarget.style.color = '#8b3333')}
+                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-dim)')}
+                  >
+                    ×
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -308,6 +222,11 @@ function PostList({ isDev }: { isDev: boolean }) {
 
 export default function Admin() {
   const [authed, setAuthed] = useState(() => localStorage.getItem(PASS_KEY) === '1');
+  const [posts, setPosts] = useState<Post[]>(() =>
+    [...(postsData as Post[])].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  );
+
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<PostCategory>('fragment');
   const [content, setContent] = useState('');
@@ -319,12 +238,42 @@ export default function Admin() {
     return <LoginScreen onLogin={() => setAuthed(true)} />;
   }
 
-  const logout = () => {
-    localStorage.removeItem(PASS_KEY);
-    setAuthed(false);
+  const logout = () => { localStorage.removeItem(PASS_KEY); setAuthed(false); };
+  const isDev = import.meta.env.DEV;
+
+  const startEdit = (post: Post) => {
+    setEditingPost(post);
+    setTitle(post.title);
+    setCategory(post.category as PostCategory);
+    setContent(post.content);
+    setPostDate(isoToInputDate(post.date));
+    setStatus('idle');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const isDev = import.meta.env.DEV;
+  const cancelEdit = () => {
+    setEditingPost(null);
+    setTitle('');
+    setCategory('fragment');
+    setContent('');
+    setPostDate(todayISO());
+    setStatus('idle');
+  };
+
+  const handleDelete = async (id: string) => {
+    if (isDev) {
+      await new Promise(r => setTimeout(r, 400));
+      setPosts(prev => prev.filter(p => p.id !== id));
+      return;
+    }
+    const resp = await fetch('/.netlify/functions/publish', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete', id }),
+    });
+    if (!resp.ok) throw new Error(await resp.text() || resp.statusText);
+    setPosts(prev => prev.filter(p => p.id !== id));
+  };
 
   const publish = async () => {
     if (!title.trim() || !content.trim()) return;
@@ -337,22 +286,41 @@ export default function Admin() {
     }
 
     try {
-      const resp = await fetch('/.netlify/functions/publish', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'publish',
-          title: title.trim(),
-          category,
-          content: content.trim(),
-          date: new Date(postDate + 'T12:00:00').toISOString(),
-        }),
-      });
-      if (!resp.ok) {
-        const msg = await resp.text();
-        throw new Error(msg || resp.statusText);
+      const isoDate = new Date(postDate + 'T12:00:00').toISOString();
+
+      if (editingPost) {
+        const resp = await fetch('/.netlify/functions/publish', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'update',
+            id: editingPost.id,
+            title: title.trim(),
+            category,
+            content: content.trim(),
+            date: isoDate,
+          }),
+        });
+        if (!resp.ok) throw new Error(await resp.text() || resp.statusText);
+
+        setPosts(prev =>
+          prev.map(p => p.id === editingPost.id
+            ? { ...p, title: title.trim(), category, content: content.trim(), date: isoDate }
+            : p
+          ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        );
+        setStatus('success');
+        setEditingPost(null);
+      } else {
+        const resp = await fetch('/.netlify/functions/publish', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'publish', title: title.trim(), category, content: content.trim(), date: isoDate }),
+        });
+        if (!resp.ok) throw new Error(await resp.text() || resp.statusText);
+        setStatus('success');
       }
-      setStatus('success');
+
       setTitle('');
       setContent('');
       setCategory('fragment');
@@ -363,7 +331,10 @@ export default function Admin() {
     }
   };
 
-  const reset = () => { setStatus('idle'); setErrorMsg(''); };
+  const reset = () => { setStatus('idle'); setErrorMsg(''); setEditingPost(null); };
+
+  const formTitle = editingPost ? 'Eintrag bearbeiten' : 'Neuer Eintrag';
+  const submitLabel = editingPost ? 'Aktualisieren →' : 'Veröffentlichen →';
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', padding: '60px 32px 120px', maxWidth: '680px', margin: '0 auto' }}>
@@ -373,23 +344,19 @@ export default function Admin() {
             ultracrass / archiv
           </div>
           <div style={{ fontFamily: 'var(--font-serif)', fontSize: '22px', fontWeight: 400 }}>
-            Neuer Eintrag
+            {formTitle}
           </div>
         </div>
         <div style={{ display: 'flex', gap: '20px', paddingTop: '4px' }}>
-          <Link href="/">
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.15em', color: 'var(--fg-dim)', textTransform: 'uppercase', cursor: 'pointer' }}>← zurück</span>
-          </Link>
-          <button onClick={logout} style={{ background: 'none', border: 'none', fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.15em', color: 'var(--fg-dim)', textTransform: 'uppercase', cursor: 'pointer', padding: 0 }}>
-            logout
-          </button>
+          <Link href="/"><span style={{ ...monoBtn, color: 'var(--fg-dim)' }}>← zurück</span></Link>
+          <button onClick={logout} style={{ ...monoBtn, color: 'var(--fg-dim)' }}>logout</button>
         </div>
       </div>
 
       {status === 'success' ? (
         <div>
           <div style={{ fontFamily: 'var(--font-serif)', fontSize: '24px', fontWeight: 400, color: 'var(--accent)', marginBottom: '12px' }}>
-            Veröffentlicht.
+            {editingPost ? 'Aktualisiert.' : 'Veröffentlicht.'}
           </div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--fg-muted)', lineHeight: 1.8, marginBottom: '32px' }}>
             Der Eintrag wurde an GitHub übergeben.<br />
@@ -424,30 +391,26 @@ export default function Admin() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
 
+          {editingPost && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '12px 16px', background: 'var(--border)', borderLeft: '2px solid var(--accent)' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.15em', color: 'var(--fg-muted)', textTransform: 'uppercase', flex: 1 }}>
+                Bearbeitung: {editingPost.title}
+              </span>
+              <button onClick={cancelEdit} style={{ ...monoBtn, color: 'var(--fg-dim)', fontSize: '9px' }}>Abbrechen</button>
+            </div>
+          )}
+
           <div>
             <label style={labelStyle}>Datum</label>
             <input
               type="date"
               value={postDate}
               onChange={e => setPostDate(e.target.value)}
-              style={{
-                ...inputStyle,
-                colorScheme: 'dark',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '13px',
-                letterSpacing: '0.06em',
-              }}
+              style={{ ...inputStyle, colorScheme: 'dark', fontFamily: 'var(--font-mono)', fontSize: '13px', letterSpacing: '0.06em' }}
               onFocus={e => (e.target.style.borderBottomColor = 'var(--fg-muted)')}
               onBlur={e => (e.target.style.borderBottomColor = 'var(--border)')}
             />
-            <div style={{
-              marginTop: '8px',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '10px',
-              letterSpacing: '0.12em',
-              color: 'var(--accent)',
-              opacity: 0.8,
-            }}>
+            <div style={{ marginTop: '8px', fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '0.12em', color: 'var(--accent)', opacity: 0.8 }}>
               {postDate ? formatDateDE(postDate) : '—'}
             </div>
           </div>
@@ -470,12 +433,7 @@ export default function Admin() {
             <select
               value={category}
               onChange={e => setCategory(e.target.value as PostCategory)}
-              style={{
-                ...inputStyle,
-                appearance: 'none',
-                cursor: 'pointer',
-                color: 'var(--fg)',
-              }}
+              style={{ ...inputStyle, appearance: 'none', cursor: 'pointer', color: 'var(--fg)' }}
               onFocus={e => (e.target.style.borderBottomColor = 'var(--fg-muted)')}
               onBlur={e => (e.target.style.borderBottomColor = 'var(--border)')}
             >
@@ -492,10 +450,7 @@ export default function Admin() {
               onChange={e => setContent(e.target.value)}
               placeholder="—"
               rows={8}
-              style={{
-                ...inputStyle,
-                resize: 'vertical',
-              }}
+              style={{ ...inputStyle, resize: 'vertical' }}
               onFocus={e => (e.target.style.borderBottomColor = 'var(--fg-muted)')}
               onBlur={e => (e.target.style.borderBottomColor = 'var(--border)')}
             />
@@ -524,35 +479,18 @@ export default function Admin() {
                 transition: 'all 0.2s',
                 width: '100%',
               }}
-              onMouseEnter={e => {
-                if (title.trim() && content.trim()) {
-                  e.currentTarget.style.borderColor = 'var(--fg-muted)';
-                  e.currentTarget.style.color = 'var(--fg)';
-                }
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = 'var(--border)';
-                e.currentTarget.style.color = (!title.trim() || !content.trim()) ? 'var(--fg-dim)' : 'var(--fg-muted)';
-              }}
+              onMouseEnter={e => { if (title.trim() && content.trim()) { e.currentTarget.style.borderColor = 'var(--fg-muted)'; e.currentTarget.style.color = 'var(--fg)'; } }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = (!title.trim() || !content.trim()) ? 'var(--fg-dim)' : 'var(--fg-muted)'; }}
             >
-              {status === 'loading' ? 'Wird übertragen...' : 'Veröffentlichen →'}
+              {status === 'loading' ? 'Wird übertragen...' : submitLabel}
             </button>
           </div>
 
           <div style={{ marginTop: '24px' }}>
-            <div style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '9px',
-              letterSpacing: '0.2em',
-              color: 'var(--fg-muted)',
-              textTransform: 'uppercase',
-              marginBottom: '4px',
-              paddingBottom: '16px',
-              borderBottom: '1px solid var(--border)',
-            }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.2em', color: 'var(--fg-muted)', textTransform: 'uppercase', marginBottom: '4px', paddingBottom: '16px', borderBottom: '1px solid var(--border)' }}>
               Alle Einträge
             </div>
-            <PostList isDev={isDev} />
+            <PostList posts={posts} onEdit={startEdit} onDelete={handleDelete} isDev={isDev} />
           </div>
         </div>
       )}
