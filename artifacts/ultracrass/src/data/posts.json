@@ -32,6 +32,12 @@
     "title": "Emil Cioran",
     "category": "zitat",
     "content": "\"Ich lebe, weil die Berge nicht wissen, dass ich leide.\"",
-    "date": "2026-03-27T11:00:00.000Z"
+    "date": "2026-03-27T11:00:00.000Z",
+    "links": [
+      {
+        "url": "https://www.deutschlandfunk.de/emil-cioran-ein-gedanke-muss-aetzen-wie-ein-gifttropfen-100.html",
+        "label": ""
+      }
+    ]
   }
 ]
