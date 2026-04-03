@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
 import postsData from '@/data/posts.json';
 import { Post, PostCategory, PostLink, CATEGORY_LABELS } from '@/types';
-import { pickArtwork, Artwork } from '@/lib/artworks';
+import { pickArtwork, getArtworkUrl, Artwork } from '@/lib/artworks';
 
 const sessionArtwork: Artwork = pickArtwork();
 
@@ -54,6 +54,7 @@ function Meta({ post }: { post: Post }) {
 }
 
 function ArtworkLayer() {
+  const url = getArtworkUrl(sessionArtwork.file);
   return (
     <div
       aria-hidden="true"
@@ -65,34 +66,40 @@ function ArtworkLayer() {
         overflow: 'hidden',
       }}
     >
+      {/* Ghost wash — full bleed, very low opacity */}
       <img
-        src={sessionArtwork.url}
+        src={url}
         alt=""
-        loading="lazy"
+        loading="eager"
         style={{
           position: 'absolute',
-          right: 0,
-          top: '50%',
-          transform: 'translateY(-50%)',
-          width: '52%',
-          height: '130%',
+          inset: 0,
+          width: '100%',
+          height: '100%',
           objectFit: 'cover',
-          objectPosition: 'center',
-          opacity: 0.22,
+          objectPosition: 'center top',
+          opacity: 0.07,
         }}
       />
+      {/* Corner fragment — bleeds in organically from top-right */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'linear-gradient(to right, var(--bg) 18%, transparent 62%)',
+          backgroundImage: `url(${url})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center top',
+          opacity: 0.32,
+          maskImage: 'radial-gradient(ellipse 58% 90% at 92% 10%, black 0%, transparent 68%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 58% 90% at 92% 10%, black 0%, transparent 68%)',
         }}
       />
+      {/* Bottom fade to background */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'linear-gradient(to bottom, transparent 70%, var(--bg) 100%)',
+          background: 'linear-gradient(to bottom, transparent 55%, var(--bg) 100%)',
         }}
       />
     </div>
@@ -157,35 +164,48 @@ function PostLinks({ links, compact = false }: { links?: PostLink[]; compact?: b
   );
 }
 
+const glassPanel: React.CSSProperties = {
+  position: 'relative',
+  zIndex: 1,
+  display: 'inline-block',
+  maxWidth: '780px',
+  width: '100%',
+  background: 'rgba(6, 6, 6, 0.56)',
+  backdropFilter: 'blur(22px)',
+  WebkitBackdropFilter: 'blur(22px)',
+  padding: '52px 60px 56px',
+  borderBottom: '1px solid rgba(255,255,255,0.045)',
+  borderRight: '1px solid rgba(255,255,255,0.025)',
+  marginLeft: '-60px',
+};
+
 function HeroPost({ post }: { post: Post }) {
   const articleBase: React.CSSProperties = {
     position: 'relative',
-    padding: '80px 0 72px',
+    minHeight: '480px',
+    display: 'flex',
+    alignItems: 'flex-start',
+    paddingTop: '72px',
+    paddingBottom: '0',
     borderBottom: '1px solid var(--border)',
     overflow: 'hidden',
-  };
-
-  const contentBase: React.CSSProperties = {
-    position: 'relative',
-    zIndex: 1,
   };
 
   if (post.category === 'zitat') {
     return (
       <article style={articleBase}>
         <ArtworkLayer />
-        <div style={contentBase}>
+        <div style={glassPanel}>
           <Meta post={post} />
           <div style={{
-            marginTop: '48px',
+            marginTop: '44px',
             fontFamily: 'var(--font-serif)',
-            fontSize: 'clamp(28px, 6vw, 56px)',
+            fontSize: 'clamp(26px, 5.5vw, 54px)',
             fontStyle: 'italic',
             fontWeight: 400,
             lineHeight: 1.15,
             letterSpacing: '-0.02em',
             color: 'var(--fg)',
-            maxWidth: '820px',
           }}>
             {post.content}
           </div>
@@ -208,28 +228,26 @@ function HeroPost({ post }: { post: Post }) {
   return (
     <article style={articleBase}>
       <ArtworkLayer />
-      <div style={contentBase}>
+      <div style={glassPanel}>
         <Meta post={post} />
         <h2 style={{
           marginTop: '28px',
           fontFamily: 'var(--font-serif)',
-          fontSize: 'clamp(32px, 6vw, 64px)',
+          fontSize: 'clamp(30px, 5.5vw, 62px)',
           fontWeight: 400,
           lineHeight: 1.08,
           letterSpacing: '-0.03em',
           color: 'var(--fg)',
-          maxWidth: '800px',
         }}>
           {post.title}
         </h2>
         <p style={{
           marginTop: '28px',
           fontFamily: 'var(--font-sans)',
-          fontSize: '16px',
+          fontSize: '15px',
           fontWeight: 300,
-          lineHeight: 1.8,
-          color: '#999',
-          maxWidth: '560px',
+          lineHeight: 1.85,
+          color: '#9a9a9a',
           whiteSpace: 'pre-wrap',
         }}>
           {post.content}
@@ -248,6 +266,49 @@ function GridPost({ post, variant }: { post: Post; variant: 'left' | 'right' | '
     center: { gridColumn: '1 / -1', maxWidth: '480px', margin: '0 auto', textAlign: 'center' },
     wide: { gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 80px', alignItems: 'start' },
   };
+
+  if (variant === 'center' && post.category !== 'zitat') {
+    return (
+      <article style={{
+        gridColumn: '1 / -1',
+        padding: '72px 0',
+        borderBottom: '1px solid var(--border)',
+        textAlign: 'center',
+      }}>
+        <Meta post={post} />
+        <h3 style={{
+          marginTop: '36px',
+          fontFamily: 'var(--font-serif)',
+          fontStyle: 'italic',
+          fontWeight: 400,
+          fontSize: 'clamp(22px, 3.8vw, 38px)',
+          lineHeight: 1.18,
+          letterSpacing: '-0.015em',
+          color: 'var(--fg)',
+          maxWidth: '620px',
+          margin: '36px auto 0',
+        }}>
+          {post.title}
+        </h3>
+        {post.content && (
+          <p style={{
+            marginTop: '20px',
+            fontFamily: 'var(--font-sans)',
+            fontSize: '13px',
+            fontWeight: 300,
+            lineHeight: 1.8,
+            color: '#777',
+            maxWidth: '440px',
+            margin: '20px auto 0',
+            whiteSpace: 'pre-wrap',
+          }}>
+            {post.content}
+          </p>
+        )}
+        <PostLinks links={post.links} compact />
+      </article>
+    );
+  }
 
   if (post.category === 'zitat') {
     return (
@@ -358,9 +419,15 @@ function GridPost({ post, variant }: { post: Post; variant: 'left' | 'right' | '
   );
 }
 
-const GRID_VARIANTS: Array<'left' | 'right' | 'wide' | 'left' | 'right'> = [
-  'wide', 'left', 'right', 'wide', 'left', 'right',
-];
+type GridVariant = 'left' | 'right' | 'center' | 'wide';
+
+function getVariantForPost(post: Post, sideIndex: number): GridVariant {
+  if (post.category === 'zitat') return 'center';
+  const len = (post.title + post.content).length;
+  if (len >= 480) return 'wide';
+  if (len < 100) return 'center';
+  return sideIndex % 2 === 0 ? 'left' : 'right';
+}
 
 export default function Home() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -444,14 +511,14 @@ export default function Home() {
                   gridTemplateColumns: '1fr 1fr',
                   gap: '0',
                 }}>
-                  {rest.map((post, i) => {
-                    const variant = GRID_VARIANTS[i % GRID_VARIANTS.length];
-                    const isQuote = post.category === 'zitat';
-                    const effectiveVariant = isQuote ? 'left' : variant;
-                    return (
-                      <GridPost key={post.id} post={post} variant={isQuote ? 'left' : effectiveVariant} />
-                    );
-                  })}
+                  {(() => {
+                    let sideIdx = 0;
+                    return rest.map((post) => {
+                      const variant = getVariantForPost(post, sideIdx);
+                      if (variant === 'left' || variant === 'right') sideIdx++;
+                      return <GridPost key={post.id} post={post} variant={variant} />;
+                    });
+                  })()}
                 </div>
               )}
             </>
