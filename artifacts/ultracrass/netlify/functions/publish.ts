@@ -1,5 +1,10 @@
 import type { Handler } from "@netlify/functions";
 
+interface PostLink {
+  url: string;
+  label?: string;
+}
+
 interface PublishBody {
   action?: "publish" | "delete" | "update";
   title?: string;
@@ -7,6 +12,7 @@ interface PublishBody {
   content?: string;
   date?: string;
   id?: string;
+  links?: PostLink[];
 }
 
 interface GithubFileResponse {
@@ -94,6 +100,7 @@ export const handler: Handler = async (event) => {
       category: body.category,
       content: body.content.trim(),
       date: postDate,
+      ...(body.links?.length ? { links: body.links } : { links: undefined }),
     };
 
     const updatedContent = Buffer.from(JSON.stringify(posts, null, 2)).toString("base64");
@@ -118,12 +125,13 @@ export const handler: Handler = async (event) => {
   const postDate = body.date ? new Date(body.date).toISOString() : new Date().toISOString();
   const id = `${postDate.slice(0, 10)}-${Date.now()}`;
 
-  const newPost = {
+  const newPost: Record<string, unknown> = {
     id,
     title: body.title.trim(),
     category: body.category,
     content: body.content.trim(),
     date: postDate,
+    ...(body.links?.length ? { links: body.links } : {}),
   };
 
   const updatedPosts = [newPost, ...posts];

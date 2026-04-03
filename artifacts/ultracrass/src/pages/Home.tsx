@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
 import postsData from '@/data/posts.json';
-import { Post, PostCategory, CATEGORY_LABELS } from '@/types';
+import { Post, PostCategory, PostLink, CATEGORY_LABELS } from '@/types';
 import { pickArtwork, Artwork } from '@/lib/artworks';
 
 const sessionArtwork: Artwork = pickArtwork();
@@ -121,6 +121,42 @@ function ArtworkCredit() {
   );
 }
 
+function getLinkLabel(link: PostLink): string {
+  if (link.label) return link.label;
+  try { return new URL(link.url).hostname.replace(/^www\./, ''); }
+  catch { return link.url; }
+}
+
+function PostLinks({ links, compact = false }: { links?: PostLink[]; compact?: boolean }) {
+  if (!links || links.length === 0) return null;
+  return (
+    <div style={{ marginTop: compact ? '14px' : '22px', display: 'flex', flexDirection: 'column', gap: '7px' }}>
+      {links.map((link, i) => (
+        <a
+          key={i}
+          href={link.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: '9px',
+            letterSpacing: '0.16em',
+            color: 'var(--fg-dim)',
+            textDecoration: 'none',
+            textTransform: 'uppercase',
+            transition: 'color 0.3s ease',
+            display: 'inline-block',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-dim)')}
+        >
+          ↗ {getLinkLabel(link)}
+        </a>
+      ))}
+    </div>
+  );
+}
+
 function HeroPost({ post }: { post: Post }) {
   const articleBase: React.CSSProperties = {
     position: 'relative',
@@ -162,6 +198,7 @@ function HeroPost({ post }: { post: Post }) {
           }}>
             — {post.title}
           </div>
+          <PostLinks links={post.links} />
         </div>
         <ArtworkCredit />
       </article>
@@ -197,6 +234,7 @@ function HeroPost({ post }: { post: Post }) {
         }}>
           {post.content}
         </p>
+        <PostLinks links={post.links} />
       </div>
       <ArtworkCredit />
     </article>
@@ -242,6 +280,7 @@ function GridPost({ post, variant }: { post: Post; variant: 'left' | 'right' | '
         }}>
           — {post.title}
         </div>
+        <PostLinks links={post.links} compact />
       </article>
     );
   }
@@ -270,17 +309,20 @@ function GridPost({ post, variant }: { post: Post; variant: 'left' | 'right' | '
               {post.title}
             </h3>
           </div>
-          <p style={{
-            paddingTop: '8px',
-            fontFamily: 'var(--font-sans)',
-            fontSize: '14px',
-            fontWeight: 300,
-            lineHeight: 1.8,
-            color: '#888',
-            whiteSpace: 'pre-wrap',
-          }}>
-            {post.content}
-          </p>
+          <div>
+            <p style={{
+              paddingTop: '8px',
+              fontFamily: 'var(--font-sans)',
+              fontSize: '14px',
+              fontWeight: 300,
+              lineHeight: 1.8,
+              color: '#888',
+              whiteSpace: 'pre-wrap',
+            }}>
+              {post.content}
+            </p>
+            <PostLinks links={post.links} compact />
+          </div>
         </div>
       </article>
     );
@@ -311,6 +353,7 @@ function GridPost({ post, variant }: { post: Post; variant: 'left' | 'right' | '
       }}>
         {post.content}
       </p>
+      <PostLinks links={post.links} compact />
     </article>
   );
 }

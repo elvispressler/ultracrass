@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'wouter';
-import { PostCategory, CATEGORY_LABELS, Post } from '@/types';
+import { PostCategory, PostLink, CATEGORY_LABELS, Post } from '@/types';
 import postsData from '@/data/posts.json';
 
 const ADMIN_PASSWORD = 'ultracrass2024';
@@ -231,6 +231,7 @@ export default function Admin() {
   const [category, setCategory] = useState<PostCategory>('fragment');
   const [content, setContent] = useState('');
   const [postDate, setPostDate] = useState<string>(todayISO);
+  const [links, setLinks] = useState<PostLink[]>([]);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error' | 'devmode'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -247,6 +248,7 @@ export default function Admin() {
     setCategory(post.category as PostCategory);
     setContent(post.content);
     setPostDate(isoToInputDate(post.date));
+    setLinks(post.links ?? []);
     setStatus('idle');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -257,8 +259,14 @@ export default function Admin() {
     setCategory('fragment');
     setContent('');
     setPostDate(todayISO());
+    setLinks([]);
     setStatus('idle');
   };
+
+  const addLink = () => setLinks(prev => [...prev, { url: '', label: '' }]);
+  const removeLink = (i: number) => setLinks(prev => prev.filter((_, idx) => idx !== i));
+  const updateLink = (i: number, field: keyof PostLink, value: string) =>
+    setLinks(prev => prev.map((l, idx) => idx === i ? { ...l, [field]: value } : l));
 
   const handleDelete = async (id: string) => {
     if (isDev) {
@@ -289,6 +297,7 @@ export default function Admin() {
       const isoDate = new Date(postDate + 'T12:00:00').toISOString();
 
       if (editingPost) {
+        const cleanLinks = links.filter(l => l.url.trim());
         const resp = await fetch('/.netlify/functions/publish', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -299,23 +308,33 @@ export default function Admin() {
             category,
             content: content.trim(),
             date: isoDate,
+            links: cleanLinks.length ? cleanLinks : undefined,
           }),
         });
         if (!resp.ok) throw new Error(await resp.text() || resp.statusText);
 
+        const cleanLinksFinal = links.filter(l => l.url.trim());
         setPosts(prev =>
           prev.map(p => p.id === editingPost.id
-            ? { ...p, title: title.trim(), category, content: content.trim(), date: isoDate }
+            ? { ...p, title: title.trim(), category, content: content.trim(), date: isoDate, links: cleanLinksFinal.length ? cleanLinksFinal : undefined }
             : p
           ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
         );
         setStatus('success');
         setEditingPost(null);
       } else {
+        const cleanLinks = links.filter(l => l.url.trim());
         const resp = await fetch('/.netlify/functions/publish', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'publish', title: title.trim(), category, content: content.trim(), date: isoDate }),
+          body: JSON.stringify({
+            action: 'publish',
+            title: title.trim(),
+            category,
+            content: content.trim(),
+            date: isoDate,
+            links: cleanLinks.length ? cleanLinks : undefined,
+          }),
         });
         if (!resp.ok) throw new Error(await resp.text() || resp.statusText);
         setStatus('success');
@@ -325,6 +344,7 @@ export default function Admin() {
       setContent('');
       setCategory('fragment');
       setPostDate(todayISO());
+      setLinks([]);
     } catch (e: unknown) {
       setStatus('error');
       setErrorMsg(e instanceof Error ? e.message : 'Unbekannter Fehler');
@@ -454,6 +474,63 @@ export default function Admin() {
               onFocus={e => (e.target.style.borderBottomColor = 'var(--fg-muted)')}
               onBlur={e => (e.target.style.borderBottomColor = 'var(--border)')}
             />
+          </div>
+
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '16px' }}>
+              <label style={labelStyle}>Links</label>
+              <button
+                type="button"
+                onClick={addLink}
+                style={{ ...monoBtn, color: 'var(--fg-dim)', fontSize: '9px', transition: 'color 0.2s' }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-dim)')}
+              >
+                + Hinzufügen
+              </button>
+            </div>
+            {links.length === 0 && (
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--fg-dim)', letterSpacing: '0.1em', padding: '10px 0' }}>
+                — noch keine Links —
+              </div>
+            )}
+            {links.map((link, i) => (
+              <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '12px', alignItems: 'end', marginBottom: '14px' }}>
+                <div>
+                  <div style={{ ...labelStyle, marginBottom: '4px', fontSize: '8px' }}>URL</div>
+                  <input
+                    type="url"
+                    value={link.url}
+                    onChange={e => updateLink(i, 'url', e.target.value)}
+                    placeholder="https://..."
+                    style={{ ...inputStyle, fontSize: '13px' }}
+                    onFocus={e => (e.target.style.borderBottomColor = 'var(--fg-muted)')}
+                    onBlur={e => (e.target.style.borderBottomColor = 'var(--border)')}
+                  />
+                </div>
+                <div>
+                  <div style={{ ...labelStyle, marginBottom: '4px', fontSize: '8px' }}>Label (optional)</div>
+                  <input
+                    type="text"
+                    value={link.label ?? ''}
+                    onChange={e => updateLink(i, 'label', e.target.value)}
+                    placeholder="—"
+                    style={{ ...inputStyle, fontSize: '13px' }}
+                    onFocus={e => (e.target.style.borderBottomColor = 'var(--fg-muted)')}
+                    onBlur={e => (e.target.style.borderBottomColor = 'var(--border)')}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeLink(i)}
+                  style={{ ...monoBtn, fontSize: '14px', color: 'var(--fg-dim)', paddingBottom: '12px', transition: 'color 0.2s', lineHeight: 1 }}
+                  onMouseEnter={e => (e.currentTarget.style.color = '#8b3333')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-dim)')}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
           </div>
 
           {status === 'error' && (
